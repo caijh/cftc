@@ -273,7 +273,7 @@ async function recreateFilesTable(config) {
         try {
           await config.database.prepare(`
             INSERT INTO files (
-              url, fileId, message_id, created_at, file_name, file_size, 
+              url, fileId, message_id, created_at, file_name, file_size,
               mime_type, chat_id, storage_type, category_id, custom_suffix
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).bind(
@@ -418,11 +418,12 @@ export default {
       menuCacheTTL: 300000,
       notificationCache: '',
       notificationCacheTTL: 3600000,
-      lastNotificationFetch: 0
+      lastNotificationFetch: 0,
+      apiKey: env.API_KEY || '',
     };
-    if (config.enableAuth && (!config.username || !config.password)) {
+    if (config.enableAuth && (!config.username || !config.password || !config.apiKey)) {
         console.error("启用了认证但未配置用户名或密码");
-        return new Response('认证配置错误: 缺少USERNAME或PASSWORD环境变量', { status: 500 });
+        return new Response('认证配置错误: 缺少USERNAME或PASSWORD或API_KEY环境变量', { status: 500 });
     }
     const url = new URL(request.url);
     const { pathname } = url;
@@ -1567,15 +1568,15 @@ async function handleMediaUpload(chatId, file, isDocument, config, userSetting) 
     const time = Date.now();
     await config.database.prepare(`
       INSERT INTO files (
-        url, 
-        fileId, 
-        message_id, 
-        created_at, 
-        file_name, 
-        file_size, 
-        mime_type, 
-        chat_id, 
-        category_id, 
+        url,
+        fileId,
+        message_id,
+        created_at,
+        file_name,
+        file_size,
+        mime_type,
+        chat_id,
+        category_id,
         storage_type
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
@@ -1650,6 +1651,12 @@ function authenticate(request, config) {
     console.error("[Auth] FAILED: Missing USERNAME or PASSWORD configuration while auth is enabled.");
     return false;
   }
+
+  const apiKey = request.headers.get('x-api-key');
+  if (apiKey && apiKey === config.apiKey) {
+    return true;
+  }
+
   const cookies = request.headers.get("Cookie") || "";
   const authToken = cookies.match(/auth_token=([^;]+)/);
   if (!authToken) {
@@ -2087,7 +2094,7 @@ async function handleSearchRequest(request, config) {
     const searchPattern = `%${query}%`;
     const files = await config.database.prepare(`
       SELECT url, fileId, message_id, created_at, file_name, file_size, mime_type
-       FROM files 
+       FROM files
        WHERE file_name LIKE ? ESCAPE '!'
        COLLATE NOCASE
        ORDER BY created_at DESC
@@ -3960,10 +3967,10 @@ function generateAdminPage(fileCards, categoryOptions) {
           const checkbox = card.querySelector('.file-checkbox');
           if (!checkbox) return;
           card.addEventListener('click', (e) => {
-            if (e.target === checkbox || 
-                e.target.closest('.file-actions a') || 
+            if (e.target === checkbox ||
+                e.target.closest('.file-actions a') ||
                 e.target.closest('.file-actions button')) {
-              return; 
+              return;
             }
             checkbox.checked = !checkbox.checked;
             const changeEvent = new Event('change', { bubbles: true });
@@ -4014,7 +4021,7 @@ function generateAdminPage(fileCards, categoryOptions) {
           return;
         }
         showConfirmModal(
-          \`确定要删除选中的 \${selectedCheckboxes.length} 个文件吗？\`, 
+          \`确定要删除选中的 \${selectedCheckboxes.length} 个文件吗？\`,
           deleteSelectedFiles
         );
       }
@@ -4028,7 +4035,7 @@ function generateAdminPage(fileCards, categoryOptions) {
         }
         const categoryName = select.options[select.selectedIndex].text;
         showConfirmModal(
-          \`确定要删除分类 "\${categoryName}" 吗？这将清空所有关联文件的分类！\`, 
+          \`确定要删除分类 "\${categoryName}" 吗？这将清空所有关联文件的分类！\`,
           deleteCategory
         );
       }
@@ -4164,7 +4171,7 @@ function generateAdminPage(fileCards, categoryOptions) {
         if (confirmModal && event.target === confirmModal) {
           closeConfirmModal();
         }
-        if (qrModal && event.target === qrModal) { 
+        if (qrModal && event.target === qrModal) {
           closeQrModal();
         }
         if (editSuffixModal && event.target === editSuffixModal) {
@@ -4183,8 +4190,8 @@ function generateAdminPage(fileCards, categoryOptions) {
         const pathParts = urlObj.pathname.split('/');
         const fileName = pathParts[pathParts.length - 1];
         const fileNameParts = fileName.split('.');
-        const extension = fileNameParts.pop(); 
-        const currentSuffix = fileNameParts.join('.'); 
+        const extension = fileNameParts.pop();
+        const currentSuffix = fileNameParts.join('.');
         const editSuffixInput = document.getElementById('editSuffixInput');
         if (editSuffixInput) {
           editSuffixInput.value = currentSuffix;
@@ -4201,7 +4208,7 @@ function generateAdminPage(fileCards, categoryOptions) {
           const response = await fetch('/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: url, fileId: fileName }) 
+            body: JSON.stringify({ id: url, fileId: fileName })
           });
           if (!response.ok) {
             const errorData = await response.json();
@@ -4271,7 +4278,7 @@ function generateAdminPage(fileCards, categoryOptions) {
           const response = await fetch('/update-suffix', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               url: currentEditUrl,
               suffix: newSuffix
             })
