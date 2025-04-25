@@ -1652,7 +1652,7 @@ function authenticate(request, config) {
     return false;
   }
 
-  const apiKey = request.headers.get('x-api-key');
+  const apiKey = request.headers.get('API_KEY');
   if (apiKey && apiKey === config.apiKey) {
     return true;
   }
