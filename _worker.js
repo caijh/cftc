@@ -2055,12 +2055,9 @@ async function handleApiFilesRequest(request, config) {
 
         // 3. 获取当前页的文件列表
         const filesResult = await config.database.prepare(
-            `SELECT 
-                files.id, url, fileId, created_at, file_name, file_size, mime_type, storage_type, 
-                categories.name as category_name, categories.id as category_id
-            FROM files 
-            LEFT JOIN categories ON files.category_id = categories.id 
-            ORDER BY created_at DESC 
+            `SELECT f.url, f.fileId, f.message_id, f.created_at, f.file_name, f.file_size, f.mime_type, f.storage_type, c.name as category_name, c.id as category_id
+             FROM files f LEFT JOIN categories c ON f.category_id = c.id
+             ORDER BY f.created_at DESC
             LIMIT ? OFFSET ?`
         ).bind(safeLimit, offset).all();
 
