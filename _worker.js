@@ -530,7 +530,8 @@ export default {
       '/bing': () => {
           console.log('[Route] Handling /bing request.');
           return handleBingImagesRequest(request, config);
-      }
+      },
+        '/api/files': () => handleApiFilesRequest(request, config),
     };
     const handler = routes[pathname];
     if (handler) {
@@ -2029,6 +2030,71 @@ async function handleDeleteMultipleRequest(request, config) {
     );
   }
 }
+
+/**
+ * 处理 /api/files 请求，返回文件列表的分页数据 (JSON 格式)
+ */
+async function handleApiFilesRequest(request, config) {
+    const url = new URL(request.url);
+
+    // 1. 获取分页参数
+    const page = parseInt(url.searchParams.get('page')) || 1;
+    const limit = parseInt(url.searchParams.get('limit')) || 10;
+    const offset = (page - 1) * limit;
+
+    // 限制 limit 范围，防止查询过大
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+
+    let files = [];
+    let totalFiles = 0;
+
+    try {
+        // 2. 获取总文件数
+        const totalResult = await config.database.prepare('SELECT COUNT(*) as count FROM files').first();
+        totalFiles = totalResult ? totalResult.count : 0;
+
+        // 3. 获取当前页的文件列表
+        const filesResult = await config.database.prepare(
+            `SELECT 
+                files.id, url, fileId, created_at, file_name, file_size, mime_type, storage_type, 
+                categories.name as category_name, categories.id as category_id
+            FROM files 
+            LEFT JOIN categories ON files.category_id = categories.id 
+            ORDER BY created_at DESC 
+            LIMIT ? OFFSET ?`
+        ).bind(safeLimit, offset).all();
+
+        files = filesResult.results || [];
+    } catch (error) {
+        console.error('查询文件分页数据失败:', error);
+        return new Response(JSON.stringify({ status: 0, error: '查询数据库失败', details: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json;charset=UTF-8' }
+        });
+    }
+
+    // 4. 计算分页信息
+    const totalPages = Math.ceil(totalFiles / safeLimit);
+
+    // 5. 构造 JSON 响应
+    const responseData = {
+        data: files,
+        pagination: {
+            total: totalFiles,
+            limit: safeLimit,
+            current_page: page,
+            total_pages: totalPages
+        }
+    };
+
+    return new Response(JSON.stringify(responseData, null, 2), {
+        headers: {
+            'Content-Type': 'application/json;charset=UTF-8',
+            'Cache-Control': 'no-cache, no-store' // 确保数据新鲜
+        }
+    });
+}
+
 async function handleAdminRequest(request, config) {
   if (config.enableAuth && !authenticate(request, config)) {
     return Response.redirect(`${new URL(request.url).origin}/`, 302);
