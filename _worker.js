@@ -136,7 +136,7 @@ async function validateDatabaseStructure(config) {
       const tableInfo = await config.database.prepare(`PRAGMA table_info(${table})`).all();
       const actualColumns = tableInfo.results;
       for (const expectedColumn of expectedColumns) {
-        const found = actualColumns.some(col => 
+        const found = actualColumns.some(col =>
           col.name.toLowerCase() === expectedColumn.name.toLowerCase() &&
           col.type.toUpperCase().includes(expectedColumn.type)
         );
@@ -277,15 +277,15 @@ async function recreateFilesTable(config) {
               mime_type, chat_id, storage_type, category_id, custom_suffix
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).bind(
-            row.url, 
-            row.fileId || row.url, 
+            row.url,
+            row.fileId || row.url,
             messageId,
             timestamp,
-            row.file_name, 
-            row.file_size, 
-            row.mime_type, 
-            row.chat_id, 
-            row.storage_type || 'telegram', 
+            row.file_name,
+            row.file_size,
+            row.mime_type,
+            row.chat_id,
+            row.storage_type || 'telegram',
             row.category_id,
             row.custom_suffix
           ).run();
@@ -316,34 +316,34 @@ async function checkAndAddMissingColumns(config) {
   }
 }
 async function ensureColumnExists(config, tableName, columnName, columnType) {
-  console.log(`确保列 ${columnName} 存在于表 ${tableName} 中...`); 
+  console.log(`确保列 ${columnName} 存在于表 ${tableName} 中...`);
   try {
-    console.log(`检查列 ${columnName} 是否存在于 ${tableName}...`); 
+    console.log(`检查列 ${columnName} 是否存在于 ${tableName}...`);
     const tableInfo = await config.database.prepare(`PRAGMA table_info(${tableName})`).all();
     const columnExists = tableInfo.results.some(col => col.name === columnName);
     if (columnExists) {
       console.log(`列 ${columnName} 已存在于表 ${tableName} 中`);
-      return true; 
+      return true;
     }
-    console.log(`列 ${columnName} 不存在于表 ${tableName}，尝试添加...`); 
+    console.log(`列 ${columnName} 不存在于表 ${tableName}，尝试添加...`);
     try {
       await config.database.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`).run();
       console.log(`列 ${columnName} 已成功添加到表 ${tableName}`);
-      return true; 
+      return true;
     } catch (alterError) {
-      console.warn(`添加列 ${columnName} 到 ${tableName} 时发生错误: ${alterError.message}. 尝试再次检查列是否存在...`, alterError); 
+      console.warn(`添加列 ${columnName} 到 ${tableName} 时发生错误: ${alterError.message}. 尝试再次检查列是否存在...`, alterError);
       const tableInfoAfterAttempt = await config.database.prepare(`PRAGMA table_info(${tableName})`).all();
       if (tableInfoAfterAttempt.results.some(col => col.name === columnName)) {
          console.log(`列 ${columnName} 在添加尝试失败后被发现存在于表 ${tableName} 中。`);
-         return true; 
+         return true;
       } else {
          console.error(`添加列 ${columnName} 到 ${tableName} 失败，并且再次检查后列仍不存在。`);
-         return false; 
+         return false;
       }
     }
   } catch (error) {
     console.error(`检查或添加表 ${tableName} 中的列 ${columnName} 时发生严重错误: ${error.message}`, error);
-    return false; 
+    return false;
   }
 }
 async function setWebhook(webhookUrl, botToken) {
@@ -385,7 +385,7 @@ async function setWebhook(webhookUrl, botToken) {
       if (retryCount < maxRetries) {
         const delay = 1000 * Math.pow(2, retryCount);
         console.log(`等待 ${delay}ms 后重试...`);
-        await new Promise(resolve => setTimeout(resolve, delay)); 
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
@@ -405,7 +405,7 @@ export default {
       password: env.PASSWORD || '',
       enableAuth: env.ENABLE_AUTH === 'true' || false,
       tgBotToken: env.TG_BOT_TOKEN || '',
-      tgChatId: env.TG_CHAT_ID ? env.TG_CHAT_ID.split(",") : [], 
+      tgChatId: env.TG_CHAT_ID ? env.TG_CHAT_ID.split(",") : [],
       tgStorageChatId: env.TG_STORAGE_CHAT_ID || env.TG_CHAT_ID || '',
       cookie: Number(env.COOKIE) || 7,
       maxSizeMB: Number(env.MAX_SIZE_MB) || 20,
@@ -444,7 +444,7 @@ export default {
         if (request.method === 'POST' || request.headers.get('Accept')?.includes('application/json')) {
             return new Response(JSON.stringify({ status: 0, error: "未授权访问", redirect: `${url.origin}/login` }), {
                 status: 401,
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json;charset=UTF-8',
                     'Cache-Control': 'no-store'
                  }
@@ -460,7 +460,7 @@ export default {
     }
     console.log(`[Auth] Check PASSED for path: ${pathname}`);
     try {
-      if (!isPublicApi && !isLoginPage) { 
+      if (!isPublicApi && !isLoginPage) {
           await initDatabase(config);
           console.log('[DB] Database initialized successfully.');
       } else {
@@ -468,9 +468,9 @@ export default {
       }
     } catch (error) {
       console.error(`[DB] Database initialization FAILED: ${error.message}`);
-      return new Response(`数据库初始化失败: ${error.message}`, { 
+      return new Response(`数据库初始化失败: ${error.message}`, {
         status: 500,
-        headers: { 
+        headers: {
             'Content-Type': 'text/plain;charset=UTF-8',
             'Cache-Control': 'no-store'
         }
@@ -481,8 +481,8 @@ export default {
         const webhookUrl = `https://${config.domain}/webhook`;
         console.log(`[Webhook] Attempting to set webhook to: ${webhookUrl}`);
         const webhookSet = await setWebhook(webhookUrl, config.tgBotToken);
-        if (!webhookSet) { 
-            console.error('[Webhook] FAILED to set webhook after retries.'); 
+        if (!webhookSet) {
+            console.error('[Webhook] FAILED to set webhook after retries.');
         } else {
             console.log('[Webhook] Webhook set successfully (or already set).');
         }
@@ -517,17 +517,17 @@ export default {
           console.log('[Route] Handling /config request.');
           const safeConfig = { maxSizeMB: config.maxSizeMB };
           return new Response(JSON.stringify(safeConfig), {
-              headers: { 
+              headers: {
                   'Content-Type': 'application/json',
                   'Cache-Control': 'public, max-age=3600'
                }
           });
       },
-      '/webhook': () => { 
+      '/webhook': () => {
           console.log('[Route] Handling /webhook request.');
-          return handleTelegramWebhook(request, config); 
+          return handleTelegramWebhook(request, config);
       },
-      '/bing': () => { 
+      '/bing': () => {
           console.log('[Route] Handling /bing request.');
           return handleBingImagesRequest(request, config);
       }
@@ -561,7 +561,7 @@ async function handleTelegramWebhook(request, config) {
       chatId = update.message.chat.id.toString();
       userId = update.message.from.id.toString();
       console.log(`[Webhook] Received message from chat ID: ${chatId}, User ID: ${userId}`);
-      // --- Ignore group/supergroup messages --- 
+      // --- Ignore group/supergroup messages ---
       if (update.message.chat.type === 'group' || update.message.chat.type === 'supergroup') {
         console.log(`[Webhook] Ignoring message from group/supergroup chat ID: ${chatId}`);
         return new Response('OK');
@@ -653,7 +653,7 @@ async function handleTelegramWebhook(request, config) {
               await config.database.prepare('UPDATE files SET url = ? WHERE id = ?')
                 .bind(fileUrl, file.id).run();
               success = true;
-            } 
+            }
             else if (file.storage_type === 'r2' && config.bucket) {
               try {
                 const fileId = file.fileId || originalFileName;
@@ -676,7 +676,7 @@ async function handleTelegramWebhook(request, config) {
                   .bind(fileUrl, file.id).run();
                 success = true;
               }
-            } 
+            }
             else {
               await config.database.prepare('UPDATE files SET url = ? WHERE id = ?')
                 .bind(fileUrl, file.id).run();
@@ -897,7 +897,7 @@ async function handleTelegramWebhook(request, config) {
                 await config.database.prepare('UPDATE files SET url = ? WHERE id = ?')
                   .bind(fileUrl, file.id).run();
                 success = true;
-              } 
+              }
               else if (file.storage_type === 'r2' && config.bucket) {
                 try {
                   const fileId = file.fileId || originalFileName;
@@ -920,7 +920,7 @@ async function handleTelegramWebhook(request, config) {
                     .bind(fileUrl, file.id).run();
                   success = true;
                 }
-              } 
+              }
               else {
                 await config.database.prepare('UPDATE files SET url = ? WHERE id = ?')
                   .bind(fileUrl, file.id).run();
@@ -1009,9 +1009,9 @@ async function sendPanel(chatId, userSetting, config) {
 async function generateMainMenu(chatId, userSetting, config) {
   const storageText = userSetting.storage_type === 'r2' ? 'R2对象存储' : 'Telegram存储';
   let categoryName = '未选择分类';
-  const categoryPromise = userSetting.current_category_id ? 
+  const categoryPromise = userSetting.current_category_id ?
       config.database.prepare('SELECT name FROM categories WHERE id = ?')
-        .bind(userSetting.current_category_id).first() 
+        .bind(userSetting.current_category_id).first()
       : Promise.resolve(null);
   const statsPromise = config.database.prepare(`
     SELECT COUNT(*) as total_files, SUM(file_size) as total_size
@@ -1026,7 +1026,7 @@ async function generateMainMenu(chatId, userSetting, config) {
         config.lastNotificationFetch = now;
       } catch (error) {
         console.error('[Notification] Failed to fetch notification:', error);
-        config.notificationCache = config.notificationCache || ''; 
+        config.notificationCache = config.notificationCache || '';
       }
     }
     return config.notificationCache;
@@ -1039,7 +1039,7 @@ async function generateMainMenu(chatId, userSetting, config) {
   if (categoryResult) {
     categoryName = categoryResult.name;
   }
-  const defaultNotification = 
+  const defaultNotification =
     "➡️ 现在您可以直接发送图片或文件，上传完成后会自动生成图床直链\n" +
     "➡️ 所有上传的文件都可以在网页后台管理，支持删除、查看、分类等操作";
   const messageBody = `☁️ <b>图床助手v1</b>
@@ -1428,10 +1428,10 @@ async function handleMediaUpload(chatId, file, isDocument, config, userSetting) 
     if (file.file_name) {
       fileName = file.file_name;
       ext = (fileName.split('.').pop() || '').toLowerCase();
-    } 
+    }
     else if (filePathExt && filePathExt !== data.result.file_path.toLowerCase()) {
       ext = filePathExt;
-    } 
+    }
     else {
       ext = getExtensionFromMime(mimeType);
     }
@@ -1454,11 +1454,11 @@ async function handleMediaUpload(chatId, file, isDocument, config, userSetting) 
     const mimeParts = mimeType.split('/');
     const mainType = mimeParts[0] || '';
     const subType = mimeParts[1] || '';
-    console.log('处理文件:', JSON.stringify({ 
-      fileName, 
-      ext, 
-      mimeType, 
-      mainType, 
+    console.log('处理文件:', JSON.stringify({
+      fileName,
+      ext,
+      mimeType,
+      mainType,
       subType,
       size: contentLength,
       filePath: data.result.file_path
@@ -1466,12 +1466,12 @@ async function handleMediaUpload(chatId, file, isDocument, config, userSetting) 
     const storageType = userSetting && userSetting.storage_type ? userSetting.storage_type : 'r2';
     let finalUrl, dbFileId, dbMessageId;
     const timestamp = Date.now();
-    const originalFileName = fileName.replace(/[^a-zA-Z0-9\-\_\.]/g, '_'); 
+    const originalFileName = fileName.replace(/[^a-zA-Z0-9\-\_\.]/g, '_');
     const key = `${timestamp}_${originalFileName}`;
     if (storageType === 'r2' && config.bucket) {
       const arrayBuffer = await fileResponse.arrayBuffer();
-      await config.bucket.put(key, arrayBuffer, { 
-        httpMetadata: { contentType: mimeType } 
+      await config.bucket.put(key, arrayBuffer, {
+        httpMetadata: { contentType: mimeType }
       });
       finalUrl = `https://${config.domain}/${key}`;
       dbFileId = key;
@@ -1540,7 +1540,7 @@ async function handleMediaUpload(chatId, file, isDocument, config, userSetting) 
         messageId = result.message_id;
         if (field === 'photo') {
           const photos = result.photo;
-          fileId = photos[photos.length - 1]?.file_id; 
+          fileId = photos[photos.length - 1]?.file_id;
         } else if (field === 'video') {
           fileId = result.video?.file_id;
         } else if (field === 'audio') {
@@ -1564,7 +1564,7 @@ async function handleMediaUpload(chatId, file, isDocument, config, userSetting) 
         text: "⏳ 正在写入数据库..."
       })
     }).catch(err => console.error('更新处理消息失败:', err));
-    const time = Date.now(); 
+    const time = Date.now();
     await config.database.prepare(`
       INSERT INTO files (
         url, 
@@ -1582,8 +1582,8 @@ async function handleMediaUpload(chatId, file, isDocument, config, userSetting) 
       finalUrl,
       dbFileId,
       dbMessageId,
-      time, 
-      fileName, 
+      time,
+      fileName,
       contentLength,
       mimeType,
       chatId,
@@ -1801,9 +1801,9 @@ async function handleDeleteCategoryRequest(request, config) {
       await config.database.prepare('UPDATE user_settings SET current_category_id = NULL WHERE current_category_id = ?').bind(id).run();
     }
     await config.database.prepare('DELETE FROM categories WHERE id = ?').bind(id).run();
-    return new Response(JSON.stringify({ 
-      status: 1, 
-      msg: `分类 "${category.name}" 删除成功${defaultCategoryId ? '，相关文件已移至默认分类' : ''}` 
+    return new Response(JSON.stringify({
+      status: 1,
+      msg: `分类 "${category.name}" 删除成功${defaultCategoryId ? '，相关文件已移至默认分类' : ''}`
     }), {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -1952,9 +1952,9 @@ async function handleDeleteMultipleRequest(request, config) {
   try {
     const { urls } = await request.json();
     if (!Array.isArray(urls) || urls.length === 0) {
-      return new Response(JSON.stringify({ 
-        status: 0, 
-        error: '无效的URL列表' 
+      return new Response(JSON.stringify({
+        status: 0,
+        error: '无效的URL列表'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -2007,8 +2007,8 @@ async function handleDeleteMultipleRequest(request, config) {
       }
     }
     return new Response(
-      JSON.stringify({ 
-        status: 1, 
+      JSON.stringify({
+        status: 1,
         message: '批量删除处理完成',
         results: {
           success: results.success.length,
@@ -2021,9 +2021,9 @@ async function handleDeleteMultipleRequest(request, config) {
   } catch (error) {
     console.error(`[Delete Multiple Error] ${error.message}`);
     return new Response(
-      JSON.stringify({ 
-        status: 0, 
-        error: error.message 
+      JSON.stringify({
+        status: 0,
+        error: error.message
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
@@ -2149,8 +2149,8 @@ async function handleFileRequest(request, config) {
       const headers = new Headers();
       headers.set('Content-Type', contentType);
       headers.set('Access-Control-Allow-Origin', '*');
-      if (contentType.startsWith('image/') || 
-          contentType.startsWith('video/') || 
+      if (contentType.startsWith('image/') ||
+          contentType.startsWith('video/') ||
           contentType.startsWith('audio/')) {
         headers.set('Content-Disposition', 'inline');
       }
@@ -2212,7 +2212,7 @@ async function handleFileRequest(request, config) {
         console.error('处理Telegram文件出错:', error.message);
         return new Response('Error processing Telegram file', { status: 500 });
       }
-    } 
+    }
     else if (file.storage_type === 'r2' && config.bucket) {
       try {
         const object = await config.bucket.get(file.fileId);
@@ -2784,6 +2784,9 @@ function generateUploadPage(categoryOptions, storageType) {
       }
       .preview-area {
         margin-top: 1rem;
+        max-height: 50vh;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
       .preview-item {
         display: flex;
@@ -4386,7 +4389,7 @@ async function handleUpdateSuffixRequest(request, config) {
         id: fileRecord.id,
         新URL: fileUrl
       });
-    } 
+    }
     else if (config.bucket) {
       try {
         const fileId = fileRecord.fileId || originalFileName;
@@ -4414,7 +4417,7 @@ async function handleUpdateSuffixRequest(request, config) {
         await config.database.prepare('UPDATE files SET url = ? WHERE id = ?')
           .bind(fileUrl, fileRecord.id).run();
       }
-    } 
+    }
     else {
       console.log('未知存储类型，只更新URL');
       await config.database.prepare('UPDATE files SET url = ? WHERE id = ?')
@@ -4432,7 +4435,7 @@ async function handleUpdateSuffixRequest(request, config) {
       msg: '更新后缀失败: ' + error.message
     }), { headers: { 'Content-Type': 'application/json' } });
   }
-} 
+}
 function generateNewUrl(url, suffix, config) {
   const fileName = getFileName(url);
   const newFileName = suffix + '.' + fileName.split('.').pop();
@@ -4579,7 +4582,7 @@ async function deleteFile(fileId, config) {
       return false;
     }
   }
-  return true; 
+  return true;
 }
 async function fetchNotification() {
   try {
@@ -4636,4 +4639,4 @@ try {
 } catch (error) {
   console.error('添加DOMContentLoaded事件监听器失败:', error);
 }
-  
+
