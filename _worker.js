@@ -2115,7 +2115,7 @@ async function handleAdminRequest(request, config) {
     return Response.redirect(`${new URL(request.url).origin}/`, 302);
   }
   try {
-    const categories = await config.database.prepare('SELECT id, name FROM categories').all();
+    const categories = await config.database.prepare('SELECT id, name FROM categories order by id').all();
     const categoryOptions = categories.results.length
       ? categories.results.map(c => `<option value="${c.id}">${c.name}</option>`).join('')
       : '<option value="">暂无分类</option>';
